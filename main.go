@@ -2,13 +2,19 @@ package main
 
 import (
 	"context"
+	"log"
 	"os"
 	"os/signal"
 )
 
 func main() {
 	store, err := LoadDefaultChatsStore()
-	defer store.Close()
+	defer func(store *ChatsStore) {
+		err := store.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(store)
 	if err != nil {
 		panic(err)
 	}
