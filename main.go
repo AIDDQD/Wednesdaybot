@@ -2,22 +2,24 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/signal"
+	"syscall"
 )
 
 func main() {
 	store, err := LoadDefaultChatsStore()
-	defer func(store *ChatsStore) {
-		err := store.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}(store)
+	defer store.Close()
 	if err != nil {
 		panic(err)
 	}
+
+	ch := make(chan os.Signal)
+	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL, syscall.SIGHUP)
+	go func() {
+		<-ch
+		store.Close()
+	}()
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
@@ -26,12 +28,12 @@ func main() {
 	tgbot.store = store
 	tgbot.RegisterHandlers()
 
-	/*scheduler := NewScheduler()
-	  sendfrog := NewSendFrogTask(tgbot, store)
-	  err = scheduler.ScheduleTaskAndStart(sendfrog.SendFrog)
-	  if err != nil {
-	  	panic(err)
-	  }*/
+	scheduler := NewScheduler()
+	sendfrog := NewSendFrogTask(tgbot, store)
+	err = scheduler.ScheduleTaskAndStart(sendfrog.SendFrog)
+	if err != nil {
+		panic(err)
+	}
 
 	tgbot.Start()
 }
