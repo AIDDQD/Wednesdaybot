@@ -19,6 +19,7 @@ func main() {
 	go func() {
 		<-ch
 		store.Close()
+		os.Exit(1488)
 	}()
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
